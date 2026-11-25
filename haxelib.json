@@ -1,0 +1,12 @@
+{
+	"name": "tjson",
+	"url": "https://github.com/BrenninhoTools/tjson",
+	"license": "BSD",
+	"tags": ["json", "tjson", "tolerant", "parser", "encoder", "cross"],
+	"description": "Tolerant JSON parser and encoder. Supports comments, unquoted keys and values, single quotes, trailing commas, hex numbers and exponents, class objects and shared references.",
+	"version": "2.0.0",
+	"releasenote": "Rewritten char code scanner, faster parsing, correct escapes and line numbers, stringify, tryParse and file helpers.",
+	"classPath": "src",
+	"contributors": ["martamius", "Brenninho"],
+	"dependencies": {}
+}

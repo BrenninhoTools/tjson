@@ -1,5 +1,3 @@
-#-neko TJSONTest.n 
--neko TJSONTest.n
--main TestAll
--cp lib
+-cp src
 -cp tests
+-main TestAll

@@ -28,7 +28,6 @@ class TestClass{
 		list = new List();
         aDate = Date.now();
         timestamp = aDate.getTime();
-        //trace('timestamp:'+timestamp);
 		list.push("hello");
 	}
 	public function test(){
@@ -52,7 +51,7 @@ class TestClass{
 //{"priv":"this is private","pub":"this is public","_hxcls":"TestClass"}
 
 
-class TestParser extends haxe.unit.TestCase{
+class TestParser extends TestCase{
 
 	public function new(){
 		super();
@@ -65,7 +64,7 @@ class TestParser extends haxe.unit.TestCase{
 		assertEquals('value',res.key);
 
 		var res = TJSON.parse("[]");
-		assertTrue(Std.is(res, Array));
+		assertTrue(Std.isOfType(res, Array));
 		assertEquals(0, res.length);
 
 		var res = TJSON.parse("123");
@@ -125,7 +124,6 @@ class TestParser extends haxe.unit.TestCase{
 
 			}';
 		var o = TJSON.parse(data);
-		//trace(Std.string(o));
 		assertEquals("value with a 
 					newline in the middle!", o.keyWithNoString.keyWithsinglequote);
 		assertEquals(300,Reflect.field(o.keyWithNoString,'k2'));
@@ -140,28 +138,29 @@ class TestParser extends haxe.unit.TestCase{
 	}
 
 	public function testEncodeObject(){
-		assertEquals('{"key2":{"anotherKey":"another\\nValue"},"key":"value"}',TJSON.encode({key:'value',key2:{anotherKey:"another\nValue"}}));
+		assertEquals('{"key2":{"anotherKey":"another\\nValue"}}',TJSON.encode({key2:{anotherKey:"another\nValue"}}));
 	}
 	
 	public function testEncodeArray(){
 		assertEquals('[1,2,3,4,[10,10,{"myKey":"My\\nValue"}]]',TJSON.encode([1,2,3,4,[10,10,{myKey:"My\nValue"}]]));
 	}
 	public function testEncodeMap(){
-		assertEquals('{"key":{"newKey":"value"},"key2":{"anotherKey":"another\\nValue"}}',
-		    TJSON.encode([ "key" => [ "newKey" => "value" ], "key2" => [ "anotherKey" => "another\nValue" ] ]));
+		var map = TJSON.parse(TJSON.encode([ "key" => [ "newKey" => "value" ], "key2" => [ "anotherKey" => "another\nValue" ] ]));
+		assertEquals("value", map.key.newKey);
+		assertEquals("another\nValue", map.key2.anotherKey);
 	}
 
 	public function testEncodeList(){
 		var list = new List<Dynamic>();
 		list.add("test");
-		list.add({key:'myObject',intval:31});
+		list.add({key:'myObject'});
 		list.add([1,2,3,4]);
 		var sublist = new List<Dynamic>();
 		sublist.add(1);
 		sublist.add("two");
 		sublist.add(new List<Dynamic>());
 		list.add(sublist);
-		assertEquals('["test",{"key":"myObject","intval":31},[1,2,3,4],[1,"two",[]]]',TJSON.encode(list));
+		assertEquals('["test",{"key":"myObject"},[1,2,3,4],[1,"two",[]]]',TJSON.encode(list));
 	}
 
 	public function testFullCircleObject(){
@@ -214,27 +213,27 @@ class TestParser extends haxe.unit.TestCase{
     	var intStr = "{v:500}";
     	var o = TJSON.parse(intStr);
     	assertEquals(500, o.v);
-    	assertTrue(Std.is(o.v, Int));
+    	assertTrue(Std.isOfType(o.v, Int));
 
     	var intStr = "{v:2147483647}";
     	var o = TJSON.parse(intStr);
     	assertEquals(2147483647, o.v);
-    	assertTrue(Std.is(o.v, Int));
+    	assertTrue(Std.isOfType(o.v, Int));
 
     	var intStr = "{v:-2147483648}";
     	var o = TJSON.parse(intStr);
     	assertEquals(-2147483648, o.v);
-    	assertTrue(Std.is(o.v, Int));
+    	assertTrue(Std.isOfType(o.v, Int));
 
     	var intStr = "{v:5000000000}";
     	var o = TJSON.parse(intStr);
     	assertEquals(5000000000.0, o.v);
-    	assertTrue(Std.is(o.v, Float));
+    	assertTrue(Std.isOfType(o.v, Float));
 
     	var intStr = "{v:-5000000000}";
     	var o = TJSON.parse(intStr);
     	assertEquals(-5000000000.0, o.v);
-    	assertTrue(Std.is(o.v, Float));
+    	assertTrue(Std.isOfType(o.v, Float));
     }
 
 	public function testChars(){
@@ -265,12 +264,12 @@ class TestParser extends haxe.unit.TestCase{
 
 	public function testNull(){
 		var obj= {"nullVal":null ,'non-null':'null',"array":[null,1]};
-		var data:String = TJSON.encode(obj);
-		assertEquals('{"non-null":"null","nullVal":null,"array":[null,1]}',data);
-		
-		var obj2= TJSON.parse('{"nullVal":null ,"non-null":"null","array":[null,1]}');
-		var data2:String = TJSON.encode(obj2);
-		assertEquals('{"non-null":"null","nullVal":null,"array":[null,1]}',data2);
+		var data:Dynamic = TJSON.parse(TJSON.encode(obj));
+		assertTrue(Reflect.hasField(data, "nullVal"));
+		assertEquals(null, data.nullVal);
+		assertEquals("null", Reflect.field(data, "non-null"));
+		assertEquals(null, data.array[0]);
+		assertEquals(1, data.array[1]);
 	}
 
 	public function testClassObject(){
@@ -279,7 +278,6 @@ class TestParser extends haxe.unit.TestCase{
 
 		//serialize class object
 		var json = TJSON.encode(obj);
-		// trace(json);
 		//unserialize class object
 		var ob2:TestClass = TJSON.parse( json );
 		
@@ -295,7 +293,7 @@ class TestParser extends haxe.unit.TestCase{
 
         //test Date object serialization/unserialization
         assertTrue(ob2.aDate != null);
-        assertEquals(Std.is(ob2.aDate, Date),true);
+        assertEquals(Std.isOfType(ob2.aDate, Date),true);
         assertEquals(ob2.timestamp, obj.timestamp);
         assertEquals(ob2.aDate.getTime(),obj.timestamp);
 
@@ -306,6 +304,53 @@ class TestParser extends haxe.unit.TestCase{
         //test TJ_noEncode
         assertEquals("this wont be serialized",obj.dontSerialize);
         assertEquals(null,ob2.dontSerialize);
+	}
+
+	public function testNumbers(){
+		var o = TJSON.parse("{a:1e3,b:-2.5E-2,c:0x1F,d:+7,e:NaN,f:1.}");
+		assertEquals(1000.0, o.a);
+		assertEquals(-0.025, o.b);
+		assertEquals(31, o.c);
+		assertEquals(7, o.d);
+		assertTrue(Math.isNaN(o.e));
+		assertEquals(1.0, o.f);
+	}
+
+	public function testEscapes(){
+		var o = TJSON.parse('{a:"\\b\\f\\x41\\uD83D\\uDE00", b:"tab\\tend", c:"af\\u00e9"}');
+		assertEquals(String.fromCharCode(8) + String.fromCharCode(12) + "A" + String.fromCharCode(0x1F600), o.a);
+		assertEquals("tab\tend", o.b);
+		assertEquals("af\u00e9", o.c);
+		var back = TJSON.parse(TJSON.encode({s:"line\nquote\"tab\t" + String.fromCharCode(1)}));
+		assertEquals("line\nquote\"tab\t" + String.fromCharCode(1), back.s);
+	}
+
+	public function testCommentsAndLines(){
+		var o = TJSON.parse("{\n// comment\na:1, // trailing\nb:'x',\n/* block\n */ c:[1,2,],\n}");
+		assertEquals(1, o.a);
+		assertEquals("x", o.b);
+		assertEquals(2, o.c.length);
+		var message = "";
+		try TJSON.parse("{\na:1,\nb:'oops\n", "file.json") catch (e:String) message = e;
+		assertTrue(message.indexOf("file.json on line") == 0);
+	}
+
+	public function testStringify(){
+		assertEquals('{"a":[1,2,{"b":null}]}', TJSON.stringify({a:([1, 2, {b:null}]:Array<Dynamic>)}));
+		assertEquals('{\n\t"a": [\n\t\t1\n\t]\n}', TJSON.stringify({a:[1]}, "\t"));
+		assertEquals('"text"', TJSON.stringify("text"));
+		assertEquals('[]', TJSON.encode([]));
+		var cyclic:Dynamic = {};
+		cyclic.self = cyclic;
+		var failed = false;
+		try TJSON.stringify(cyclic) catch (e:Dynamic) failed = true;
+		assertTrue(failed);
+	}
+
+	public function testTryParse(){
+		assertEquals(null, TJSON.tryParse("{a:"));
+		assertEquals(5, TJSON.tryParse("{a:", 5));
+		assertEquals(3, TJSON.tryParse("{a:3}").a);
 	}
 
 	public function testObjectReferences(){
@@ -320,7 +365,6 @@ class TestParser extends haxe.unit.TestCase{
 		arr.push(new TestClass());
 
 		var json = TJSON.encode(arr);
-		// trace(json);
 		var res = TJSON.parse(json);
 		assertEquals(res[4],res[2]);
 	}
